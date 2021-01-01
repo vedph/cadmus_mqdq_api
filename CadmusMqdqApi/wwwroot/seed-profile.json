@@ -10,7 +10,6 @@
           "typeId": "it.vedph.categories",
           "name": "categories",
           "description": "Item's categories.",
-          "required": true,
           "colorKey": "98F8F8",
           "groupKey": "general",
           "sortKey": "categories"
@@ -42,6 +41,7 @@
         {
           "typeId": "it.vedph.tiled-text",
           "roleId": "base-text",
+          "IsRequired": true,
           "name": "text",
           "description": "Item's tiles-based text.",
           "colorKey": "31AB54",

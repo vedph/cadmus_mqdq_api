@@ -3,7 +3,7 @@
 Quick Docker image build:
 
 ```bash
-docker build . -t vedph2020/cadmus_mqdq_api:1.0.9 -t vedph2020/cadmus_mqdq_api:latest
+docker build . -t vedph2020/cadmus_mqdq_api:1.0.10 -t vedph2020/cadmus_mqdq_api:latest
 ```
 
 (replace with the current version).

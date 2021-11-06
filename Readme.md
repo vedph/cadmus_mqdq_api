@@ -12,6 +12,8 @@ This is a Cadmus API layer customized for the MQDQ (Musisque Deoque) project. Mo
 
 ## History
 
+- 2021-11-06: updated packages.
+
 - 2021-10-15 (v 1.1.0): minor breaking change for auth database by AspNetCore.Identity.Mongo 8.3.1 (used since Cadmus.Api.Controllers 1.3.0, Cadmus.Api.Services 1.2.0):
 
 ```js

@@ -3,7 +3,7 @@
 Quick Docker image build:
 
 ```bash
-docker build . -t vedph2020/cadmus_mqdq_api:2.0.0 -t vedph2020/cadmus_mqdq_api:latest
+docker build . -t vedph2020/cadmus_mqdq_api:2.0.1 -t vedph2020/cadmus_mqdq_api:latest
 ```
 
 (replace with the current version).
@@ -11,6 +11,8 @@ docker build . -t vedph2020/cadmus_mqdq_api:2.0.0 -t vedph2020/cadmus_mqdq_api:l
 This is a Cadmus API layer customized for the MQDQ (Musisque Deoque) project. Most of its code is derived from shared Cadmus libraries. See the [documentation](https://github.com/vedph/cadmus_doc/blob/master/api/creating.md) for more.
 
 ## History
+
+- 2021-11-21: minor updates. Image: 2.0.0.
 
 - 2021-11-11: upgraded to NET 6.
 

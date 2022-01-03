@@ -1,7 +1,7 @@
 ﻿using Cadmus.Core.Config;
 using Cadmus.Seed;
-using Cadmus.Seed.Parts.General;
-using Cadmus.Seed.Philology.Parts.Layers;
+using Cadmus.Seed.General.Parts;
+using Cadmus.Seed.Philology.Parts;
 using Fusi.Microsoft.Extensions.Configuration.InMemoryJson;
 using Microsoft.Extensions.Configuration;
 using SimpleInjector;
@@ -29,7 +29,7 @@ namespace CadmusMqdqApi.Services
             // build the tags to types map for parts/fragments
             Assembly[] seedAssemblies = new[]
             {
-                // Cadmus.Seed.Parts
+                // Cadmus.Seed.General.Parts
                 typeof(NotePartSeeder).Assembly,
                 // Cadmus.Seed.Philology.Parts
                 typeof(ApparatusLayerFragmentSeeder).Assembly

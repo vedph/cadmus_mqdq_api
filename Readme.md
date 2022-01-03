@@ -12,6 +12,7 @@ This is a Cadmus API layer customized for the MQDQ (Musisque Deoque) project. Mo
 
 ## History
 
+- 2022-01-03: updated packages after moving parts out of core solution, and added metadata part to the available parts in configuration.
 - 2021-12-22: updated packages. Image: 3.0.2.
 - 2021-12-18: updated packages.
 - 2021-11-22: upgraded to refactored API endpoints.

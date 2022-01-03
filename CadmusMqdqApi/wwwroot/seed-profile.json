@@ -15,6 +15,14 @@
           "sortKey": "categories"
         },
         {
+          "typeId": "it.vedph.metadata",
+          "name": "metadata",
+          "description": "Item's categories.",
+          "colorKey": "9898F8",
+          "groupKey": "general",
+          "sortKey": "metadata"
+        },
+        {
           "typeId": "it.vedph.keywords",
           "name": "keywords",
           "description": "Item's keywords.",
@@ -109,6 +117,10 @@
         {
           "id": "it.vedph.categories",
           "value": "categories"
+        },
+        {
+          "id": "it.vedph.metadata",
+          "value": "metadata"
         },
         {
           "id": "it.vedph.keywords",
@@ -33490,6 +33502,9 @@
             "geography"
           ]
         }
+      },
+      {
+        "id": "seed.it.vedph.metadata"
       },
       {
         "id": "seed.it.vedph.keywords",

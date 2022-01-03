@@ -3,9 +3,9 @@ using System.Reflection;
 using Cadmus.Core;
 using Cadmus.Core.Config;
 using Cadmus.Core.Storage;
+using Cadmus.General.Parts;
 using Cadmus.Mongo;
-using Cadmus.Parts.General;
-using Cadmus.Philology.Parts.Layers;
+using Cadmus.Philology.Parts;
 using Microsoft.Extensions.Configuration;
 using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
 
@@ -17,7 +17,6 @@ namespace CadmusMqdqApi.Services
     public sealed class AppRepositoryProvider : IRepositoryProvider
     {
         private readonly IConfiguration _configuration;
-        private readonly TagAttributeToTypeMap _map;
         private readonly IPartTypeProvider _partTypeProvider;
 
         /// <summary>
@@ -30,16 +29,16 @@ namespace CadmusMqdqApi.Services
             _configuration = configuration ??
                 throw new ArgumentNullException(nameof(configuration));
 
-            _map = new TagAttributeToTypeMap();
-            _map.Add(new[]
+            var map = new TagAttributeToTypeMap();
+            map.Add(new[]
             {
-                // Cadmus.Parts
+                // Cadmus.General.Parts
                 typeof(NotePart).GetTypeInfo().Assembly,
                 // Cadmus.Philology.Parts
                 typeof(ApparatusLayerFragment).GetTypeInfo().Assembly
             });
 
-            _partTypeProvider = new StandardPartTypeProvider(_map);
+            _partTypeProvider = new StandardPartTypeProvider(map);
         }
 
         /// <summary>

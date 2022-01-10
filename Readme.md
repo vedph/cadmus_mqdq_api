@@ -3,7 +3,7 @@
 Quick Docker image build:
 
 ```bash
-docker build . -t vedph2020/cadmus_mqdq_api:3.0.2 -t vedph2020/cadmus_mqdq_api:latest
+docker build . -t vedph2020/cadmus_mqdq_api:3.0.3 -t vedph2020/cadmus_mqdq_api:latest
 ```
 
 (replace with the current version).
@@ -12,6 +12,7 @@ This is a Cadmus API layer customized for the MQDQ (Musisque Deoque) project. Mo
 
 ## History
 
+- 2022-01-10: updated packages. Image: 3.0.3.
 - 2022-01-03: updated packages after moving parts out of core solution, and added metadata part to the available parts in configuration.
 - 2021-12-22: updated packages. Image: 3.0.2.
 - 2021-12-18: updated packages.

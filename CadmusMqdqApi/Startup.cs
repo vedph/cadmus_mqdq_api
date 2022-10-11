@@ -30,6 +30,9 @@ using Cadmus.Api.Services;
 using System.Linq;
 using Microsoft.AspNetCore.HttpOverrides;
 using CadmusMqdqApi.Services;
+using Cadmus.Core.Storage;
+using System.Globalization;
+using Cadmus.Export.Preview;
 
 namespace CadmusMqdqApi
 {
@@ -124,7 +127,7 @@ namespace CadmusMqdqApi
                     IConfigurationSection jwtSection = Configuration.GetSection("Jwt");
                     string key = jwtSection["SecureKey"];
                     if (string.IsNullOrEmpty(key))
-                        throw new ApplicationException("Required JWT SecureKey not found");
+                        throw new InvalidOperationException("Required JWT SecureKey not found");
 
                     options.SaveToken = true;
                     options.RequireHttpsMetadata = false;
@@ -143,7 +146,53 @@ namespace CadmusMqdqApi
 #endif
         }
 
-        private void ConfigureSwaggerServices(IServiceCollection services)
+        private CadmusPreviewer GetPreviewer(IServiceProvider provider)
+        {
+            // get dependencies
+            ICadmusRepository repository =
+                    provider.GetService<IRepositoryProvider>().CreateRepository();
+            ICadmusPreviewFactoryProvider factoryProvider =
+                new StandardCadmusPreviewFactoryProvider();
+
+            // nope if disabled
+            if (!Configuration.GetSection("Preview").GetSection("IsEnabled")
+                .Get<bool>())
+            {
+                return new CadmusPreviewer(factoryProvider.GetFactory("{}"),
+                    repository);
+            }
+
+            // get profile source
+            ILogger logger = provider.GetService<ILogger>();
+            IHostEnvironment env = provider.GetService<IHostEnvironment>();
+            string path = Path.Combine(env.ContentRootPath,
+                "wwwroot", "preview-profile.json");
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"Preview profile expected at {path} not found");
+                logger.Error($"Preview profile expected at {path} not found");
+                return new CadmusPreviewer(factoryProvider.GetFactory("{}"),
+                    repository);
+            }
+
+            // load profile
+            Console.WriteLine($"Loading preview profile from {path}...");
+            logger.Information($"Loading preview profile from {path}...");
+            string profile;
+            using (StreamReader reader = new(new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.Read), Encoding.UTF8))
+            {
+                profile = reader.ReadToEnd();
+            }
+            CadmusPreviewFactory factory = factoryProvider.GetFactory(profile);
+            factory.ConnectionString = string.Format(CultureInfo.InvariantCulture,
+                Configuration.GetConnectionString("Default"),
+                Configuration.GetValue<string>("DatabaseNames:Data"));
+
+            return new CadmusPreviewer(factory, repository);
+        }
+
+        private static void ConfigureSwaggerServices(IServiceCollection services)
         {
             services.AddSwaggerGen(c =>
             {
@@ -173,18 +222,17 @@ namespace CadmusMqdqApi
                     Type = SecuritySchemeType.ApiKey
                 });
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-            {
-                new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference
+                    new OpenApiSecurityScheme
                     {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                Array.Empty<string>()
-            }
-            });
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }});
             });
         }
 
@@ -212,7 +260,6 @@ namespace CadmusMqdqApi
                     options.JsonSerializerOptions.PropertyNamingPolicy =
                         JsonNamingPolicy.CamelCase;
                 });
-                //.SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             // authentication
             ConfigureAuthServices(services);
@@ -235,7 +282,12 @@ namespace CadmusMqdqApi
             // configuration
             services.AddSingleton(_ => Configuration);
             // repository
-            services.AddSingleton<IRepositoryProvider, AppRepositoryProvider>();
+            string dataCS = string.Format(
+                Configuration.GetConnectionString("Default"),
+                Configuration.GetValue<string>("DatabaseNames:Data"));
+            services.AddSingleton<IRepositoryProvider>(
+              _ => new AppRepositoryProvider { ConnectionString = dataCS });
+
             // part seeder factory provider
             services.AddSingleton<IPartSeederFactoryProvider,
                 AppPartSeederFactoryProvider>();
@@ -250,6 +302,8 @@ namespace CadmusMqdqApi
             services.AddSingleton<IItemIndexFactoryProvider>(_ =>
                 new StandardItemIndexFactoryProvider(
                     indexCS));
+            // previewer
+            services.AddSingleton(p => GetPreviewer(p));
 
             // swagger
             ConfigureSwaggerServices(services);
@@ -263,7 +317,6 @@ namespace CadmusMqdqApi
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.WithExceptionDetails()
                 .WriteTo.Console()
-                /*.WriteTo.MSSqlServer(Configuration["Serilog:ConnectionString"],*/
                 .WriteTo.MongoDBCapped(Configuration["Serilog:ConnectionString"],
                     cappedMaxSizeMb: !string.IsNullOrEmpty(maxSize) &&
                         int.TryParse(maxSize, out int n) && n > 0 ? n : 10)
@@ -288,8 +341,25 @@ namespace CadmusMqdqApi
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                // https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl?view=aspnetcore-5.0&tabs=visual-studio
+                app.UseExceptionHandler("/Error");
+                if (Configuration.GetValue<bool>("Server:UseHSTS"))
+                {
+                    Console.WriteLine("HSTS: yes");
+                    app.UseHsts();
+                }
+                else Console.WriteLine("HSTS: no");
+            }
 
-            app.UseHttpsRedirection();
+            if (Configuration.GetValue<bool>("Server:UseHttpsRedirection"))
+            {
+                Console.WriteLine("HttpsRedirection: yes");
+                app.UseHttpsRedirection();
+            }
+            else Console.WriteLine("HttpsRedirection: no");
+
             app.UseRouting();
             // CORS
             app.UseCors("CorsPolicy");
@@ -305,7 +375,6 @@ namespace CadmusMqdqApi
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
-                //options.SwaggerEndpoint("/swagger/v1/swagger.json", "V1 Docs");
                 string url = Configuration.GetValue<string>("Swagger:Endpoint");
                 if (string.IsNullOrEmpty(url)) url = "v1/swagger.json";
                 options.SwaggerEndpoint(url, "V1 Docs");

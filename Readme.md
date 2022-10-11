@@ -12,6 +12,8 @@ This is a Cadmus API layer customized for the MQDQ (Musisque Deoque) project. Mo
 
 ## History
 
+- 2022-10-10: updated packages and injection in `Startup.cs` for new `IRepositoryProvider`.
+
 ### 3.0.4
 
 - 2022-06-20: updated packages.

@@ -6,7 +6,6 @@ using MessagingApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -85,7 +84,7 @@ namespace CadmusMqdqApi
             {
                 origins = section.AsEnumerable()
                     .Where(p => !string.IsNullOrEmpty(p.Value))
-                    .Select(p => p.Value).ToArray();
+                    .Select(p => p.Value!).ToArray();
             }
 
             services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
@@ -101,7 +100,7 @@ namespace CadmusMqdqApi
         private void ConfigureAuthServices(IServiceCollection services)
         {
             // identity
-            string connStringTemplate = Configuration.GetConnectionString("Default");
+            string connStringTemplate = Configuration.GetConnectionString("Default")!;
 
             services.AddIdentityMongoDbProvider<ApplicationUser, ApplicationRole>(
                 options => { },
@@ -125,7 +124,7 @@ namespace CadmusMqdqApi
                     // NOTE: remember to set the values in configuration:
                     // Jwt:SecureKey, Jwt:Audience, Jwt:Issuer
                     IConfigurationSection jwtSection = Configuration.GetSection("Jwt");
-                    string key = jwtSection["SecureKey"];
+                    string? key = jwtSection["SecureKey"];
                     if (string.IsNullOrEmpty(key))
                         throw new InvalidOperationException("Required JWT SecureKey not found");
 
@@ -150,7 +149,7 @@ namespace CadmusMqdqApi
         {
             // get dependencies
             ICadmusRepository repository =
-                    provider.GetService<IRepositoryProvider>().CreateRepository();
+                    provider.GetService<IRepositoryProvider>()!.CreateRepository()!;
             ICadmusPreviewFactoryProvider factoryProvider =
                 new StandardCadmusPreviewFactoryProvider();
 
@@ -163,21 +162,21 @@ namespace CadmusMqdqApi
             }
 
             // get profile source
-            ILogger logger = provider.GetService<ILogger>();
-            IHostEnvironment env = provider.GetService<IHostEnvironment>();
+            ILogger? logger = provider.GetService<ILogger>();
+            IHostEnvironment env = provider.GetService<IHostEnvironment>()!;
             string path = Path.Combine(env.ContentRootPath,
                 "wwwroot", "preview-profile.json");
             if (!File.Exists(path))
             {
                 Console.WriteLine($"Preview profile expected at {path} not found");
-                logger.Error($"Preview profile expected at {path} not found");
+                logger?.Error($"Preview profile expected at {path} not found");
                 return new CadmusPreviewer(factoryProvider.GetFactory("{}"),
                     repository);
             }
 
             // load profile
             Console.WriteLine($"Loading preview profile from {path}...");
-            logger.Information($"Loading preview profile from {path}...");
+            logger?.Information($"Loading preview profile from {path}...");
             string profile;
             using (StreamReader reader = new(new FileStream(
                 path, FileMode.Open, FileAccess.Read, FileShare.Read), Encoding.UTF8))
@@ -186,7 +185,7 @@ namespace CadmusMqdqApi
             }
             CadmusPreviewFactory factory = factoryProvider.GetFactory(profile);
             factory.ConnectionString = string.Format(CultureInfo.InvariantCulture,
-                Configuration.GetConnectionString("Default"),
+                Configuration.GetConnectionString("Default")!,
                 Configuration.GetValue<string>("DatabaseNames:Data"));
 
             return new CadmusPreviewer(factory, repository);
@@ -273,7 +272,7 @@ namespace CadmusMqdqApi
                 ApplicationUserRepository>();
 
             // messaging
-            // TODO: you can use another mailer service here. In this case,
+            // you can use another mailer service here. In this case,
             // also change the types in ConfigureOptionsServices.
             services.AddTransient<IMailerService, DotNetMailerService>();
             services.AddTransient<IMessageBuilderService,
@@ -283,7 +282,7 @@ namespace CadmusMqdqApi
             services.AddSingleton(_ => Configuration);
             // repository
             string dataCS = string.Format(
-                Configuration.GetConnectionString("Default"),
+                Configuration.GetConnectionString("Default")!,
                 Configuration.GetValue<string>("DatabaseNames:Data"));
             services.AddSingleton<IRepositoryProvider>(
               _ => new AppRepositoryProvider { ConnectionString = dataCS });
@@ -294,14 +293,13 @@ namespace CadmusMqdqApi
             // item browser factory provider
             services.AddSingleton<IItemBrowserFactoryProvider>(_ =>
                 new StandardItemBrowserFactoryProvider(
-                    Configuration.GetConnectionString("Default")));
+                    Configuration.GetConnectionString("Default")!));
             // item index factory provider
             string indexCS = string.Format(
-                Configuration.GetConnectionString("Index"),
+                Configuration.GetConnectionString("Index")!,
                 Configuration.GetValue<string>("DatabaseNames:Data"));
             services.AddSingleton<IItemIndexFactoryProvider>(_ =>
-                new StandardItemIndexFactoryProvider(
-                    indexCS));
+                new StandardItemIndexFactoryProvider(indexCS));
             // previewer
             services.AddSingleton(p => GetPreviewer(p));
 
@@ -311,13 +309,13 @@ namespace CadmusMqdqApi
             // serilog
             // Install-Package Serilog.Exceptions Serilog.Sinks.MongoDB
             // https://github.com/RehanSaeed/Serilog.Exceptions
-            string maxSize = Configuration["Serilog:MaxMbSize"];
+            string? maxSize = Configuration["Serilog:MaxMbSize"];
             services.AddSingleton<ILogger>(_ => new LoggerConfiguration()
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.WithExceptionDetails()
                 .WriteTo.Console()
-                .WriteTo.MongoDBCapped(Configuration["Serilog:ConnectionString"],
+                .WriteTo.MongoDBCapped(Configuration["Serilog:ConnectionString"]!,
                     cappedMaxSizeMb: !string.IsNullOrEmpty(maxSize) &&
                         int.TryParse(maxSize, out int n) && n > 0 ? n : 10)
                     .CreateLogger());
@@ -350,7 +348,10 @@ namespace CadmusMqdqApi
                     Console.WriteLine("HSTS: yes");
                     app.UseHsts();
                 }
-                else Console.WriteLine("HSTS: no");
+                else
+                {
+                    Console.WriteLine("HSTS: no");
+                }
             }
 
             if (Configuration.GetValue<bool>("Server:UseHttpsRedirection"))
@@ -358,7 +359,10 @@ namespace CadmusMqdqApi
                 Console.WriteLine("HttpsRedirection: yes");
                 app.UseHttpsRedirection();
             }
-            else Console.WriteLine("HttpsRedirection: no");
+            else
+            {
+                Console.WriteLine("HttpsRedirection: no");
+            }
 
             app.UseRouting();
             // CORS
@@ -366,16 +370,13 @@ namespace CadmusMqdqApi
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => endpoints.MapControllers());
 
             // Swagger
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
-                string url = Configuration.GetValue<string>("Swagger:Endpoint");
+                string? url = Configuration.GetValue<string>("Swagger:Endpoint");
                 if (string.IsNullOrEmpty(url)) url = "v1/swagger.json";
                 options.SwaggerEndpoint(url, "V1 Docs");
             });

@@ -27,6 +27,7 @@ namespace CadmusMqdqApi.Services
         /// <exception cref="ArgumentNullException">configuration</exception>
         public AppRepositoryProvider()
         {
+            ConnectionString = "";
             var map = new TagAttributeToTypeMap();
             map.Add(new[]
             {
@@ -57,9 +58,7 @@ namespace CadmusMqdqApi.Services
         {
             // create the repository (no need to use container here)
             MongoCadmusRepository repository =
-                new MongoCadmusRepository(
-                    _partTypeProvider,
-                    new StandardItemSortKeyBuilder());
+                new(_partTypeProvider, new StandardItemSortKeyBuilder());
 
             repository.Configure(new MongoCadmusRepositoryOptions
             {
